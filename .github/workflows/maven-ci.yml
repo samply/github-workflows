@@ -1,0 +1,75 @@
+# This workflow will build and test a Java project with Maven.
+# If the publish flag is set to true, the resulting package will eventually be deployed to https://oss.sonatype.org/
+
+name: Building, Testing and Publishing a Maven Package
+
+on:
+  workflow-call:
+    inputs:
+      publish:
+        required: false
+        default: true
+        type: boolean
+    inputs:
+      java-version:
+        required: false
+        default: 8
+        type: number
+    inputs:
+      java-distribution:
+        required: false
+        default: 'temurin'
+        type: string
+
+jobs:
+  java-build-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v2
+
+    - name: Setup Java for Building the Package
+      uses: actions/setup-java@v2
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: ${{ inputs.java-distribution }}
+
+    - name: Cache Local Maven Repo
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-${{ inputs.java-distribution }}-${{ inputs.java-version }}-maven-${{ matrix.maven_profile }}-${{ hashFiles('pom.xml') }}
+
+    - name: Run the unit tests
+      run: mvn --batch-mode test
+
+    - name: Setup Java for Publishing the Package
+      if: ${{ inputs.publish }}
+      uses: actions/setup-java@v2
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: ${{ inputs.java-distribution }}
+        server-id: ossrh
+        # The environment variable that will contain maven username in next step
+        server-username: MAVEN_USERNAME
+        # The environment variable that will contain maven password in next step
+        server-password: MAVEN_PASSWORD # The environment variable to read for maven password in next step
+        # The private key to use for signing the artifact, export with
+        #   gpg --list-secret-keys --keyid-format LONG
+        #   gpg --export-secret-keys -a <id-of-the-private-key-you-want-to-use>
+        gpg-private-key: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+        # The environment variable that will contain the gpg-passphrase for signing in the next step
+        gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+    - name: Publish the Package to https://oss.sonatype.org
+      if: ${{ inputs.publish }}
+      run: |
+        mvn --batch-mode -Dgpg.passphrase=$MAVEN_GPG_PASSPHRASE deploy
+      env:
+        # username from oauth2-access-token for https://oss.sonatype.org
+        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+        # password from oauth2-access-token for https://oss.sonatype.org
+        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        # passphrase for the gpg-private-key added in the step "Setup Java for Publishing the Package"
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
