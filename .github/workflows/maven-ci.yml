@@ -6,19 +6,24 @@ name: Building, Testing and Publishing a Maven Package
 on:
   workflow-call:
     inputs:
+      # Wether to publish the build artifact to https://oss.sonatype.org, defaults to true
       publish:
         required: false
         default: true
         type: boolean
-    inputs:
+      # The java version used for building the artifact, defaults to 8
       java-version:
         required: false
         default: 8
         type: number
-    inputs:
+      # The java distribution used for building the artifact, defaults to temurin
       java-distribution:
         required: false
         default: 'temurin'
+        type: string
+      # An optional list of command line parameters, passed to all maven commands
+      maven-commandline-parameters:
+        required: false
         type: string
 
 jobs:
@@ -42,7 +47,7 @@ jobs:
           key: ${{ runner.os }}-${{ inputs.java-distribution }}-${{ inputs.java-version }}-maven-${{ matrix.maven_profile }}-${{ hashFiles('pom.xml') }}
 
     - name: Run the unit tests
-      run: mvn --batch-mode test
+      run: mvn --batch-mode ${{ inputs.maven-commandline-parameters }} test
 
     - name: Setup Java for Publishing the Package
       if: ${{ inputs.publish }}
@@ -65,7 +70,7 @@ jobs:
     - name: Publish the Package to https://oss.sonatype.org
       if: ${{ inputs.publish }}
       run: |
-        mvn --batch-mode -Dgpg.passphrase=$MAVEN_GPG_PASSPHRASE deploy
+        mvn --batch-mode -Dgpg.passphrase=$MAVEN_GPG_PASSPHRASE ${{ inputs.maven-commandline-parameters }} deploy
       env:
         # username from oauth2-access-token for https://oss.sonatype.org
         MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
