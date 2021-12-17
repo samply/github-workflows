@@ -21,6 +21,7 @@ on:
         required: false
         default: 'temurin'
         type: string
+
       # An optional list of command line parameters, passed to all maven commands
       maven-commandline-parameters:
         required: false
@@ -48,6 +49,14 @@ jobs:
 
     - name: Run the unit tests
       run: mvn --batch-mode ${{ inputs.maven-commandline-parameters }} test
+
+      # Save the generated Maven Artifacts, for later processing in other steps
+    - name: Save Package as Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        # TODO: Proper naming to uniquely identify every artifact
+        name: 'maven-build-result'
+        path: 'target'
 
     - name: Setup Java for Publishing the Package
       if: ${{ inputs.publish }}
