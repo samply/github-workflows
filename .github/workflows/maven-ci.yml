@@ -42,10 +42,10 @@ jobs:
         distribution: ${{ inputs.java-distribution }}
 
     - name: Cache Local Maven Repo
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-${{ inputs.java-distribution }}-${{ inputs.java-version }}-maven-${{ matrix.maven_profile }}-${{ hashFiles('pom.xml') }}
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-${{ inputs.java-distribution }}-${{ inputs.java-version }}-maven-${{ matrix.maven_profile }}-${{ hashFiles('pom.xml') }}
 
     - name: Run the unit tests
       run: mvn --batch-mode ${{ inputs.maven-commandline-parameters }} test
