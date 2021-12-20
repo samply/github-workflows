@@ -4,7 +4,7 @@
 name: Building, Testing and Publishing a Maven Package
 
 on:
-  workflow-call:
+  workflow_call:
     inputs:
       # Wether to publish the build artifact to https://oss.sonatype.org, defaults to true
       publish:
