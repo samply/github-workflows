@@ -30,6 +30,15 @@ on:
         required: false
         default: ''
         type: string
+    secrets:
+      MAVEN_USERNAME:
+        required: true
+      MAVEN_PASSWORD:
+        required: true
+      OSSRH_GPG_SECRET_KEY:
+        required: true
+      OSSRH_GPG_SECRET_KEY_PASSWORD:
+        required: true
 
 jobs:
   java-build-publish:
@@ -59,7 +68,6 @@ jobs:
       if: ${{ inputs.artifact-name != '' }}
       uses: actions/upload-artifact@v2
       with:
-        # TODO: Proper naming to uniquely identify every artifact
         name: ${{ inputs.artifact-name }}
         path: 'target'
 
