@@ -25,6 +25,11 @@ on:
       maven-command-line-parameters:
         required: false
         type: string
+      # The artifact name, which should be used for uploading the target directory for other workflows
+      artifact-name:
+        required: false
+        default: ''
+        type: string
 
 jobs:
   java-build-publish:
@@ -51,10 +56,11 @@ jobs:
 
       # Save the generated Maven Artifacts, for later processing in other steps
     - name: Save Package as Artifact
+      if: ${{ inputs.artifact-name != '' }}
       uses: actions/upload-artifact@v2
       with:
         # TODO: Proper naming to uniquely identify every artifact
-        name: 'maven-build-result'
+        name: ${{ inputs.artifact-name }}
         path: 'target'
 
     - name: Setup Java for Publishing the Package
