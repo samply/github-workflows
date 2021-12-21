@@ -58,7 +58,8 @@ jobs:
         path: 'target'
 
     - name: Setup Java for Publishing the Package
-      if: ${{ inputs.publish }}
+      # Ensure, that only packages get pushed, that are derived from main or develop branch
+      if: ${{ inputs.publish && (github.event_name != 'pull_request') }}
       uses: actions/setup-java@v2
       with:
         java-version: ${{ inputs.java-version }}
@@ -76,7 +77,7 @@ jobs:
         gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
     - name: Publish the Package to https://oss.sonatype.org
-      if: ${{ inputs.publish }}
+      if: ${{ inputs.publish && (github.event_name != 'pull_request') }}
       run: |
         mvn --batch-mode -Dgpg.passphrase=$MAVEN_GPG_PASSPHRASE ${{ inputs.maven-commandline-parameters }} deploy
       env:
