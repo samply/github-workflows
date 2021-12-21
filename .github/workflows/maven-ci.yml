@@ -6,7 +6,7 @@ name: Building, Testing and Publishing a Maven Package
 on:
   workflow_call:
     inputs:
-      # Wether to publish the build artifact to https://oss.sonatype.org, defaults to true
+      # Whether to publish the build artifact to https://oss.sonatype.org, defaults to true
       publish:
         required: false
         default: true
@@ -21,9 +21,8 @@ on:
         required: false
         default: 'temurin'
         type: string
-
-      # An optional list of command line parameters, passed to all maven commands
-      maven-commandline-parameters:
+      # An optional list of command-line parameters, passed to all maven commands
+      maven-command-line-parameters:
         required: false
         type: string
 
