@@ -24,9 +24,10 @@ on:
         type: string
         default: './Dockerfile'
       # A list of build arguments, passed to the docker build
-      build-args:
-        required: false
-        type: list
+      # FIXME: GitHub Actions currently doesn't support list types on inputs. This needs to be parsed by us from string.
+      # build-args:
+      #   required: false
+      #   type: list
       # If your actions generate an artifact in a previous build step, you can tell this worflow to download it
       artifact-name:
         required: false
