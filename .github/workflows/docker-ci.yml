@@ -23,6 +23,10 @@ on:
         required: false
         type: string
         default: './Dockerfile'
+      build-platforms:
+        required: false
+        type: string
+        default: "linux/amd64,linux/arm64/v8"
       # A list of build arguments, passed to the docker build
       # FIXME: GitHub Actions currently doesn't support list types on inputs. This needs to be parsed by us from string.
       # build-args:
@@ -65,6 +69,7 @@ jobs:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
           build-args: ${{ inputs.build-args }}
+          platforms: ${{ inputs.build-platforms }}
           load: true
           tags: ${{ inputs.image-name }}
 
@@ -111,7 +116,7 @@ jobs:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
           push: true
-          platforms: "linux/amd64,linux/arm64/v8"
+          platforms: ${{ inputs.build-platforms }}
           build-args: ${{ inputs.build-args }}
           labels: ${{ steps.docker-meta-ghcr.outputs.labels }}
           tags: ${{ steps.docker-meta-ghcr.outputs.tags }}
@@ -146,7 +151,7 @@ jobs:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
           push: true
-          platforms: "linux/amd64,linux/arm64/v8"
+          platforms: ${{ inputs.build-platforms }}
           build-args: ${{ inputs.build-args }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
