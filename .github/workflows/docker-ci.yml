@@ -69,7 +69,7 @@ jobs:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
           build-args: ${{ inputs.build-args }}
-          platforms: ${{ inputs.build-platforms }}
+          # NOTE: Not specifying build platforms here due to conflict with the load option!
           load: true
           tags: ${{ inputs.image-name }}
 
