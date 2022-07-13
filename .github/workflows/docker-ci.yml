@@ -64,7 +64,7 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v2
 
-      - name: Download Previous Build Artifacts
+      - name: Download Previous Build Artifacts to artifacts/
         if: ${{ inputs.artifact-name != '' }}
         uses: actions/download-artifact@v3
         with:
