@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.2.0 - 2022-07-15]
+### Added
+- Documentation in docker-ci.yml
+### Changed
+- To avoid name collisions, artifacts are -- by convention, not configuration -- always downloaded into directory ./artifacts/
+- Updated to actions/download-artifact@v3
+
 ## [1.1.1 - 2022-06-02]
 ### Fixed
 - Removed platform specification from first Docker Build, due to conflicts with the load option

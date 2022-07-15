@@ -1,4 +1,17 @@
-# This workflow will build a Docker Image and publish it
+# A common workflow for building, testing and publishing docker images in the samply organization (see https://github.com/samply).
+# Upon completion of this workflow, following actions will be taken:
+# 1) Build the docker image using a Dockerfile in the source code (default is ./Dockerfile)
+# 2) Scan the image for vulnerabilities with trivy (see https://github.com/aquasecurity/trivy)
+# 3) Upload the scan results from step 2 to the github security tab of the repository
+# 4) Generating appropriate image tags for publishing using the docker/metadata-action. Following Rules are applied:
+#     1. Running the action on push to the main branch will trigger tagging image as latest
+#     2. Running the action on push to a git branch trigger tagging image as "<branchname>"
+#     3. Running the action on push of a git tag matching the semver schema will trigger tagging image with {MAJOR}, {MAJOR}.{MINOR} and {MAJOR}.{MINOR}.{PATCH}
+#     4. Running the action on push to a pull request, will trigger tagging for the github container registry with ghcr.io/<repository-name>/<pr-reference>
+#     5. Running the action on a scheduled basis will trigger tagging images with "nightly".
+# 5) Rebuild the image for all necessary platforms an publish it based on the applied tags from 4.
+#
+# An usage example for this action is provided in the samply organization: https://github.com/samply/.github/blob/main/workflow-templates/docker-ci-template.yml
 
 name: Build, Test and Deploy Docker Image
 
@@ -51,11 +64,12 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v2
 
-      - name: Download Previous Build Artifacts
+      - name: Download Previous Build Artifacts to artifacts/
         if: ${{ inputs.artifact-name != '' }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ inputs.artifact-name }}
+          path: artifacts
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
