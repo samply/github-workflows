@@ -45,7 +45,8 @@ on:
       # build-args:
       #   required: false
       #   type: list
-      # If your actions generate an artifact in a previous build step, you can tell this worflow to download it
+      # If your actions generate an artifact in a previous build step, you can tell this worflow to download it.
+      # '*' will download *ALL* build artifacts into named subdirectories.
       artifact-name:
         required: false
         type: string
