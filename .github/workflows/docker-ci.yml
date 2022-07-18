@@ -92,6 +92,7 @@ jobs:
         with:
           image-ref: ${{ inputs.image-name }}
           format: template
+          ignore-unfixed: true
           template: '@/contrib/sarif.tpl'
           output: trivy-results.sarif
 
