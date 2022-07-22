@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.3.2 - 2022-07-21]
+### Fixed
+- latest tag should now be created automatically on default branch, as intended
+## [1.3.1 - 2022-07-21]
+### Changed
+- Switched to new Trivy Syntax for exporting sarif security scan results
+## [1.3.0 - 2022-07-19]
+### Added
+- Added Syntax to Download all Artifacts from a Pipeline
+## [1.2.1 - 2022-07-18]
+### Changed
+- Security Scan for Images will now ignore unfixable issues
 ## [1.2.0 - 2022-07-15]
 ### Added
 - Documentation in docker-ci.yml

@@ -121,6 +121,8 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha,format=long,prefix=${{ inputs.image-tag-prefix }}sha-
+            # set latest tag for default branch
+            type=raw,value=latest,enable={{is_default_branch}}
           flavor: |
             prefix=${{ inputs.image-tag-prefix }},onlatest=true
 
@@ -155,6 +157,8 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            # set latest tag for default branch
+            type=raw,value=latest,enable={{is_default_branch}}
           flavor: |
             prefix=${{ inputs.image-tag-prefix }},onlatest=true
 
