@@ -1,0 +1,30 @@
+name: Checking pom.xml version and updating changelog
+
+on:
+  pull_request:
+    types: [ opened ]
+
+jobs:
+  pre_pull_request_preparations:
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
+      - name: Check version
+        uses: avides/actions-project-version-check@v1.3.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          file-to-check: pom.xml
+      - name: show version from check
+        run: echo ${{ steps.actions_project_version_check.outputs.version }}
+
+      - name: Run Changelog CI
+        uses: saadmk11/changelog-ci@v1.0.0
+      - name: Get Changelog Output
+        run: |
+          echo "${{ steps.changelog-ci.outputs.changelog }}"
