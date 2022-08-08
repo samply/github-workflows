@@ -51,11 +51,6 @@ on:
         required: false
         type: string
         default: ''
-      security-scan:
-        required: false
-        type: boolean
-        default: true
-        description: Whether to run Trivy security scan
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -67,6 +62,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Analyze repository
+        run: |
+          VISIBILITY="$(curl https://api.github.com/repos/${{ github.repository }} | jq -r .visibility)"
+          if [ "$VISIBILITY" != "public" ]; then
+            echo "Repository is not public -- will skip security scans."
+            echo "security-scan=false" >> $GITHUB_ENV
+          else
+            echo "security-scan=true" >> $GITHUB_ENV
+          fi
+
       - name: Checkout Source Code
         uses: actions/checkout@v2
 
@@ -101,7 +106,7 @@ jobs:
 
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
-        if: ${{ inputs.security-scan }}
+        if: ${{ env.security-scan != 'false' }}
         with:
           image-ref: ${{ inputs.image-name }}
           format: sarif
@@ -110,7 +115,7 @@ jobs:
 
       - name: Upload Trivy Scan Results to GitHub Security Tab
         uses: github/codeql-action/upload-sarif@codeql-bundle-20211208
-        if: ${{ inputs.security-scan }}
+        if: ${{ env.security-scan != 'false' }}
         with:
           sarif_file: trivy-results.sarif
 
