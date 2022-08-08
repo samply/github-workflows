@@ -45,7 +45,8 @@ on:
       # build-args:
       #   required: false
       #   type: list
-      # If your actions generate an artifact in a previous build step, you can tell this worflow to download it
+      # If your actions generate an artifact in a previous build step, you can tell this worflow to download it.
+      # '*' will download *ALL* build artifacts into named subdirectories.
       artifact-name:
         required: false
         type: string
@@ -69,11 +70,17 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v2
 
-      - name: Download Previous Build Artifacts to artifacts/
-        if: ${{ inputs.artifact-name != '' }}
+      - name: Download specific Build Artifact to artifacts/
+        if: ${{ inputs.artifact-name != '' && inputs.artifact-name != '*' }}
         uses: actions/download-artifact@v3
         with:
           name: ${{ inputs.artifact-name }}
+          path: artifacts
+
+      - name: Download all Build Artifacts to artifacts/
+        if: ${{ inputs.artifact-name == '*' }}
+        uses: actions/download-artifact@v3
+        with:
           path: artifacts
 
       - name: Set up QEMU
@@ -97,8 +104,8 @@ jobs:
         if: ${{ inputs.security-scan }}
         with:
           image-ref: ${{ inputs.image-name }}
-          format: template
-          template: '@/contrib/sarif.tpl'
+          format: sarif
+          ignore-unfixed: true
           output: trivy-results.sarif
 
       - name: Upload Trivy Scan Results to GitHub Security Tab
@@ -121,6 +128,8 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha,format=long,prefix=${{ inputs.image-tag-prefix }}sha-
+            # set latest tag for default branch
+            type=raw,value=latest,enable={{is_default_branch}}
           flavor: |
             prefix=${{ inputs.image-tag-prefix }},onlatest=true
 
@@ -155,6 +164,8 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            # set latest tag for default branch
+            type=raw,value=latest,enable={{is_default_branch}}
           flavor: |
             prefix=${{ inputs.image-tag-prefix }},onlatest=true
 
