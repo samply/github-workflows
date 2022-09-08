@@ -61,7 +61,7 @@ jobs:
         key: ${{ runner.os }}-${{ inputs.java-distribution }}-${{ inputs.java-version }}-maven-${{ matrix.maven_profile }}-${{ hashFiles('pom.xml') }}
 
     - name: Run the unit tests
-      run: mvn --batch-mode ${{ inputs.maven-commandline-parameters }} test
+      run: mvn --batch-mode ${{ inputs.maven-command-line-parameters }} test
 
       # Save the generated Maven Artifacts, for later processing in other steps
     - name: Save Package as Artifact
@@ -93,7 +93,7 @@ jobs:
     - name: Publish the Package to https://oss.sonatype.org
       if: ${{ inputs.publish && (github.event_name != 'pull_request') }}
       run: |
-        mvn --batch-mode -Dgpg.passphrase=$MAVEN_GPG_PASSPHRASE ${{ inputs.maven-commandline-parameters }} deploy
+        mvn --batch-mode -Dgpg.passphrase=$MAVEN_GPG_PASSPHRASE ${{ inputs.maven-command-line-parameters }} deploy
       env:
         # username from oauth2-access-token for https://oss.sonatype.org
         MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
