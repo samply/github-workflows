@@ -89,7 +89,7 @@ jobs:
           path: artifacts
 
       - name: ls
-        run: ls -la
+        run: ls -laR
         
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
