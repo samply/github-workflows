@@ -58,7 +58,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/.m2/repository
-        key: ${{ runner.os }}-${{ inputs.java-distribution }}-${{ inputs.java-version }}-maven-${{ matrix.maven_profile }}-${{ hashFiles('pom.xml') }}
+        key: ${{ runner.os }}-${{ inputs.java-distribution }}-${{ inputs.java-version }}-maven-${{ hashFiles('pom.xml') }}
 
     - name: Run the unit tests
       run: mvn --batch-mode ${{ inputs.maven-command-line-parameters }} test
