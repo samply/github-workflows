@@ -113,6 +113,7 @@ jobs:
         with:
           image-ref: ${{ inputs.image-name }}
           format: sarif
+          timeout: '10m0s'
           ignore-unfixed: true
           output: trivy-results.sarif
 
