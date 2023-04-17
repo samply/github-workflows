@@ -73,7 +73,7 @@ jobs:
           fi
 
       - name: Checkout Source Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download specific Build Artifact to artifacts/
         if: ${{ inputs.artifact-name != '' && inputs.artifact-name != '*' }}
@@ -92,13 +92,13 @@ jobs:
         run: ls -laR
         
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Build and Export to Docker
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
@@ -118,14 +118,14 @@ jobs:
           output: trivy-results.sarif
 
       - name: Upload Trivy Scan Results to GitHub Security Tab
-        uses: github/codeql-action/upload-sarif@codeql-bundle-20211208
+        uses: github/codeql-action/upload-sarif@v2
         if: ${{ env.security-scan != 'false' }}
         with:
           sarif_file: trivy-results.sarif
 
       - name: Define Image Tags for Github Container Registry
         id: docker-meta-ghcr
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           images: |
             "ghcr.io/${{ inputs.image-name }}"
@@ -143,14 +143,14 @@ jobs:
             prefix=${{ inputs.image-tag-prefix }},onlatest=true
 
       - name: Login to Github Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Image to Github Container Registry
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
@@ -162,7 +162,7 @@ jobs:
 
       - name: Generate Image Tags for Docker Hub
         id: docker-meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         if: github.event_name != 'pull_request'
         with:
           images: |
@@ -179,14 +179,14 @@ jobs:
             prefix=${{ inputs.image-tag-prefix }},onlatest=true
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         if: github.event_name != 'pull_request'
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push Image to Docker Hub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         if: github.event_name != 'pull_request'
         with:
           context: ${{ inputs.build-context }}
