@@ -46,9 +46,9 @@ on:
         default: "linux/amd64,linux/arm64/v8"
       # A list of build arguments, passed to the docker build
       # FIXME: GitHub Actions currently doesn't support list types on inputs. This needs to be parsed by us from string.
-      # build-args:
-      #   required: false
-      #   type: list
+      build-args:
+        required: false
+        type: string
       # If your actions generate an artifact in a previous build step, you can tell this worflow to download it.
       # '*' will download *ALL* build artifacts into named subdirectories.
       artifact-name:
