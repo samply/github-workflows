@@ -1,0 +1,224 @@
+name: Build with Rust and Docker
+
+on:
+  workflow_call:
+    inputs:
+      image-prefix:
+        description: "The Docker Hub Repository prefix to push to, e.g samply/"
+        required: true
+        type: string
+      profile:
+        required: false
+        type: string
+        default: "release"
+      architectures:
+        required: false
+        type: string
+        default: '[ "amd64", "arm64" ]'
+      features:
+        required: false
+        type: string
+        default: '[ "" ]'
+      cache-version:
+        description: "To invalidate old caches, increase this to v1, v2, ..."
+        required: false
+        type: string
+        default: "v0"
+      components:
+        description: 'Name all components here in JSON (e.g. [ "beam-proxy", "beam-broker" ])'
+        required: true
+        type: string
+      test-via-script:
+        description: "Whether to test via ./dev/test ci [feature]"
+        required: false
+        type: boolean
+        default: false
+      push-to:
+        description: "Set to none, dockerhub, ghcr or both"
+        required: true
+        type: string
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
+env:
+  CARGO_TERM_COLOR: always
+  PROFILE: ${{ inputs.profile }}
+
+jobs:
+  pre-check:
+    name: Security, License Check
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: EmbarkStudios/cargo-deny-action@v1
+
+  build:
+    name: Build
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.architectures) }}
+        features: ${{ fromJSON(inputs.features) }}
+
+    steps:
+      - name: Print matrix vars
+        run: |
+          echo "Arch: ${{ matrix.arch }}"
+          echo "Features: ${{ matrix.features }}"
+      - name: Set arch ${{ matrix.arch }}
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          if [ "${ARCH}" == "arm64" ]; then
+            echo "rustarch=aarch64-unknown-linux-gnu" >> $GITHUB_ENV
+          elif [ "${ARCH}" == "amd64" ]; then
+            echo "rustarch=x86_64-unknown-linux-gnu" >> $GITHUB_ENV
+          else
+            exit 1
+          fi
+          if [ "$(dpkg --print-architecture)" != "${ARCH}" ]; then
+            echo "Cross-compiling to ${ARCH}."
+            echo "is_cross=true" >> $GITHUB_ENV
+          else
+            echo "Natively compiling to ${ARCH}."
+            echo "is_cross=false" >> $GITHUB_ENV
+          fi
+      - name: Set profile ${{ env.PROFILE }}
+        env:
+          PROFILE: ${{ env.PROFILE }}
+        run: |
+          if [ "${PROFILE}" == "release" ]; then
+            echo "profilestr=--release" >> $GITHUB_ENV
+          elif [ "${PROFILE}" == "debug" ]; then
+            echo "profilestr=" >> $GITHUB_ENV
+          else
+            echo "profilestr=--profile $PROFILE" >> $GITHUB_ENV
+          fi
+      - uses: actions/checkout@v3
+#      - uses: actions-rs/toolchain@v1
+#        if: false
+#        with:
+#          toolchain: stable
+#          override: true
+#          target: ${{ env.rustarch }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.arch }}-${{ env.PROFILE }}
+          prefix-key: ${{ inputs.cache-version }}-rust-${{ matrix.features && format('features_{0}', matrix.features) || 'nofeatures' }} # Increase to invalidate old caches.
+      - name: Build (cross to ${{ matrix.arch }})
+        if: env.is_cross == 'true'
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ env.is_cross }}
+          command: build
+          args: --target ${{ env.rustarch }} ${{ matrix.features && format('--features {0}', matrix.features) }} ${{ env.profilestr }}
+      - name: Build (native)
+        if: env.is_cross == 'false'
+        run: |
+          OUT=$(cargo build --tests --bins --message-format=json --target ${{ env.rustarch }} ${{ matrix.features && format('--features {0}', matrix.features) }} ${{ env.profilestr }})
+          TESTS=$(echo "$OUT" | jq -r 'select(.profile.test == true) | .executable | select(. != null)')
+          mkdir -p testbinaries/
+          for testbin in $TESTS; do
+            mv -v $testbin testbinaries/
+          done
+      - name: Prepare bins
+        env:
+          PROFILE: ${{ env.PROFILE }}
+        run: |
+          {
+            echo 'bins<<EOF'
+            find target/ -type d -name ${{ env.PROFILE }} -exec find {} -maxdepth 1 -type f -executable \;
+            echo EOF
+          } >> "$GITHUB_ENV"
+      - name: Upload (bins)
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries-${{ matrix.arch }}-${{ matrix.features }}
+          if-no-files-found: error
+          path: |
+            ${{ env.bins }}
+      - name: Upload (test, native only)
+        if: matrix.arch == 'amd64'
+        uses: actions/upload-artifact@v3
+        with:
+          name: testbinaries-${{ matrix.arch }}-${{ matrix.features }}
+          if-no-files-found: error
+          path: |
+            testbinaries/*
+
+  test:
+    name: Test
+    needs: [ build ]
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        features: ${{ fromJSON(inputs.features) }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download bins
+        uses: actions/download-artifact@v3
+        with:
+          name: binaries-amd64-${{ matrix.features }}
+          path: artifacts/binaries-amd64/
+      - name: Download tests
+        uses: actions/download-artifact@v3
+        with:
+          name: testbinaries-amd64-${{ matrix.features }}
+          path: testbinaries/
+      - name: Run tests via cargo
+        if: ${{ ! inputs.test-via-script }}
+        run: |
+          for testbin in testbinaries/*; do
+            chmod +x $testbin
+            $testbin
+          done
+      - name: Run tests via script
+        if: ${{ inputs.test-via-script }}
+        run: |
+          ./dev/test ci ${{ matrix.features && format('--features {0}', matrix.features) }}
+
+  docker:
+    name: Docker
+    needs: [ build, pre-check, test ]
+    if: ${{ inputs.push-to }}
+
+    strategy:
+      matrix:
+        components: ${{ fromJSON(inputs.components) }}
+        features: ${{ fromJSON(inputs.features) }}
+
+    # This workflow defines how a maven package is built, tested and published.
+    # Visit: https://github.com/samply/github-workflows/blob/develop/.github/workflows/docker-ci.yml, for more information
+    uses: samply/github-workflows/.github/workflows/docker-ci.yml@rust
+    with:
+      # The Docker Hub Repository you want eventually push to, e.g samply/share-client
+      image-name: ${{ inputs.image-prefix }}${{ matrix.components }}
+      image-tag-suffix: ${{ matrix.features && format('-{0}', matrix.features) }}
+      # Define special prefixes for docker tags. They will prefix each images tag.
+      # image-tag-prefix: "foo"
+      # Define the build context of your image, typically default '.' will be enough
+      # build-context: '.'
+      # Define the Dockerfile of your image, typically default './Dockerfile' will be enough
+      build-file: './Dockerfile'
+      # NOTE: This doesn't work currently
+      # A list of build arguments, passed to the docker build
+      build-args: |
+        FEATURE=-${{ matrix.features }}
+        COMPONENT=${{ matrix.components }}
+      # Define the target platforms of the docker build (default "linux/amd64,linux/arm64/v8")
+      # build-platforms: ${{ env.build_platforms }}
+      build-platforms-short: ${{ inputs.architectures }}
+      # If your actions generate an artifact in a previous build step, you can tell this workflow to download it
+      artifact-name: '*'
+      binary-name: ${{ matrix.components }}
+      push-to: ${{ inputs.push-to }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
