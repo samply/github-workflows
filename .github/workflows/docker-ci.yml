@@ -44,6 +44,9 @@ on:
         required: false
         type: string
         default: "linux/amd64,linux/arm64/v8"
+      build-platforms-short:
+        required: false
+        type: string
       # A list of build arguments, passed to the docker build
       # FIXME: GitHub Actions currently doesn't support list types on inputs. This needs to be parsed by us from string.
       build-args:
@@ -55,6 +58,13 @@ on:
         required: false
         type: string
         default: ''
+      binary-name:
+        required: false
+        type: string
+      # Set to none, dockerhub, ghcr or both
+      push-to:
+        required: true
+        type: string
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -63,9 +73,53 @@ on:
 
 jobs:
   build:
+    name: Dockerize${{ inputs.binary-name && format(' ({0})', inputs.binary-name) }}${{ inputs.image-tag-suffix && format(' ({0})', inputs.image-tag-suffix) }}
     runs-on: ubuntu-latest
 
     steps:
+      - name: Read vars
+        env:
+          ARCHS_LONG: ${{ inputs.build-platforms }}
+          ARCHS_SHORT: ${{ inputs.build-platforms-short }}
+          PUSH_TO: ${{ inputs.push-to }}
+        run: |
+          RESULT=""
+          if [ "$ARCHS_SHORT" == "" ]; then
+            RESULT="$ARCHS_LONG"
+          else
+            for ARCH in $(echo "$ARCHS_SHORT" | jq -r '.[]'); do
+              if [ "$ARCH" == "amd64" ]; then
+                RESULT="$RESULT,linux/amd64"
+              fi
+              if [ "$ARCH" == "arm64" ]; then
+                RESULT="$RESULT,linux/arm64/v8"
+              fi
+            done
+          fi
+          GHCR=
+          DOCKERHUB=
+          case "$PUSH_TO" in
+            both)
+              GHCR=true
+              DOCKERHUB=true
+              ;;
+            dockerhub)
+              DOCKERHUB=true
+              ;;
+            ghcr)
+              GHCR=true
+              ;;
+            none)
+              ;;
+            *)
+              echo "Unsupported push target: \"$PUSH_TO\". Please supply none, dockerhub, ghcr or both."
+              exit 1
+          esac
+          echo "Resulting build_platforms is \"$RESULT\""
+          echo "build_platforms=$RESULT" >> $GITHUB_ENV
+          echo "dockerhub=$DOCKERHUB" >> $GITHUB_ENV
+          echo "ghcr=$GHCR" >> $GITHUB_ENV
+
       - name: Analyze repository
         run: |
           VISIBILITY="$(curl https://api.github.com/repos/${{ github.repository }} | jq -r .visibility)"
@@ -92,6 +146,14 @@ jobs:
         with:
           path: artifacts
 
+      - name: Replace binary name in Dockerfile
+        if: ${{ inputs.binary-name }}
+        env:
+          BUILD_FILE: ${{ inputs.build-file }}
+          BINARY_NAME: ${{ inputs.binary-name }}
+        run: |
+          sed -i "s,/usr/local/bin/samply,/usr/local/bin/${BINARY_NAME},g" ${BUILD_FILE}
+
       - name: ls
         run: ls -laR
         
@@ -103,6 +165,7 @@ jobs:
 
       - name: Build and Export to Docker
         uses: docker/build-push-action@v2
+        if: ${{ env.security-scan != 'false' }}
         with:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
@@ -129,7 +192,7 @@ jobs:
 
       - name: Define Image Tags for Github Container Registry
         id: docker-meta-ghcr
-        if: ${{ env.security-scan != 'false' }}
+        if: env.ghcr
         uses: docker/metadata-action@v3
         with:
           images: |
@@ -149,7 +212,7 @@ jobs:
             suffix=${{ inputs.image-tag-suffix }},onlatest=true
 
       - name: Login to Github Container Registry
-        if: ${{ env.security-scan != 'false' }}
+        if: env.ghcr
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
@@ -157,13 +220,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Image to Github Container Registry
-        if: ${{ env.security-scan != 'false' }}
+        if: env.ghcr
         uses: docker/build-push-action@v2
         with:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
           push: true
-          platforms: ${{ inputs.build-platforms }}
+          platforms: ${{ env.build_platforms }}
           build-args: ${{ inputs.build-args }}
           labels: ${{ steps.docker-meta-ghcr.outputs.labels }}
           tags: ${{ steps.docker-meta-ghcr.outputs.tags }}
@@ -171,7 +234,7 @@ jobs:
       - name: Generate Image Tags for Docker Hub
         id: docker-meta
         uses: docker/metadata-action@v3
-        if: github.event_name != 'pull_request'
+        if: env.dockerhub && github.event_name != 'pull_request'
         with:
           images: |
             ${{ inputs.image-name }}
@@ -189,19 +252,19 @@ jobs:
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
-        if: github.event_name != 'pull_request'
+        if: env.dockerhub && github.event_name != 'pull_request'
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push Image to Docker Hub
         uses: docker/build-push-action@v2
-        if: github.event_name != 'pull_request'
+        if: env.dockerhub && github.event_name != 'pull_request'
         with:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
           push: true
-          platforms: ${{ inputs.build-platforms }}
+          platforms: ${{ env.build_platforms }}
           build-args: ${{ inputs.build-args }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
