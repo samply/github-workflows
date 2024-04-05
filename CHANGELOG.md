@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.4.0 - 2024-04-04]
+### Added
+- New **mandatory** parameter push-to for docker-ci.yml
+- Unified pipeline for Rust projects (rust.yml)
 ## [1.3.2 - 2022-07-21]
 ### Fixed
 - latest tag should now be created automatically on default branch, as intended
