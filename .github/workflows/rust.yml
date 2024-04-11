@@ -37,6 +37,11 @@ on:
         description: "Set to none, dockerhub, ghcr or both"
         required: true
         type: string
+      # delete GHCR images older than ... (default: "one year"; state "keep" to skip)
+      ghcr-retention-policy:
+        required: false
+        default: one year
+        type: string
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -53,7 +58,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: EmbarkStudios/cargo-deny-action@v1
 
   build:
@@ -99,7 +104,7 @@ jobs:
           else
             echo "profilestr=--profile $PROFILE" >> $GITHUB_ENV
           fi
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 #      - uses: actions-rs/toolchain@v1
 #        if: false
 #        with:
@@ -196,7 +201,7 @@ jobs:
 
     # This workflow defines how a maven package is built, tested and published.
     # Visit: https://github.com/samply/github-workflows/blob/develop/.github/workflows/docker-ci.yml, for more information
-    uses: samply/github-workflows/.github/workflows/docker-ci.yml@ghcr-commit
+    uses: samply/github-workflows/.github/workflows/docker-ci.yml@main
     with:
       # The Docker Hub Repository you want eventually push to, e.g samply/share-client
       image-name: ${{ inputs.image-prefix }}${{ matrix.components }}
@@ -219,6 +224,7 @@ jobs:
       artifact-name: '*'
       binary-name: ${{ matrix.components }}
       push-to: ${{ inputs.push-to }}
+      ghcr-retention-policy: ${{ inputs.ghcr-retention-policy }}
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

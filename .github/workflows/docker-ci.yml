@@ -65,6 +65,11 @@ on:
       push-to:
         required: true
         type: string
+      # delete GHCR images older than ... (default: "one year"; state "keep" to skip)
+      ghcr-retention-policy:
+        required: false
+        default: one year
+        type: string
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -72,6 +77,22 @@ on:
         required: true
 
 jobs:
+  tidy-ghcr:
+    name: Tidy GHCR images older than ${{ inputs.ghcr-retention-policy }}
+    runs-on: ubuntu-latest
+    if: ${{ inputs.ghcr-retention-policy != 'keep' }}
+
+    steps:
+      - name: Delete old images
+        uses: snok/container-retention-policy@v2
+        with:
+          image-names: ${{ github.event.repository.name }}
+          cut-off: ${{ inputs.ghcr-retention-policy }} ago UTC
+          account-type: org
+          org-name: samply
+          token: ${{ secrets.GITHUB_TOKEN }}
+          token-type: github-token
+
   build:
     name: Dockerize${{ inputs.binary-name && format(' ({0})', inputs.binary-name) }}${{ inputs.image-tag-suffix && format(' ({0})', inputs.image-tag-suffix) }}
     runs-on: ubuntu-latest
