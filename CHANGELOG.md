@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.4.1 - 2024-04-11]
+### Added
+- Always push GHCR images based on commit id, e.g. `samply/component:commit-123456`
+- Cleanup old GHCR images (default: keep one year)
 ## [1.4.0 - 2024-04-04]
 ### Added
 - New **mandatory** parameter push-to for docker-ci.yml
