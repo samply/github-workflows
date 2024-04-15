@@ -83,10 +83,15 @@ jobs:
     if: ${{ inputs.ghcr-retention-policy != 'keep' }}
 
     steps:
+      - name: Compute image name
+        run: |
+          IMGNAME="${{ inputs.image-name }}"
+          echo "imgnameshort=${IMGNAME/samply\//}" >> $GITHUB_ENV
+
       - name: Delete old images
         uses: snok/container-retention-policy@v2
         with:
-          image-names: ${{ inputs.image-name }}
+          image-names: ${{ env.imgnameshort }}
           cut-off: ${{ inputs.ghcr-retention-policy }} ago UTC
           account-type: org
           org-name: samply
