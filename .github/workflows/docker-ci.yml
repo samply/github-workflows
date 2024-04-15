@@ -78,7 +78,7 @@ on:
 
 jobs:
   tidy-ghcr:
-    name: Tidy GHCR images older than ${{ inputs.ghcr-retention-policy }}
+    name: Tidy GHCR images (${{ inputs.image-name }})
     runs-on: ubuntu-latest
     if: ${{ inputs.ghcr-retention-policy != 'keep' }}
 
