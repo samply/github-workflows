@@ -86,7 +86,7 @@ jobs:
       - name: Delete old images
         uses: snok/container-retention-policy@v2
         with:
-          image-names: ${{ github.event.repository.name }}
+          image-names: ${{ inputs.image-name }}
           cut-off: ${{ inputs.ghcr-retention-policy }} ago UTC
           account-type: org
           org-name: samply
