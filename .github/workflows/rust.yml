@@ -37,6 +37,11 @@ on:
         description: "Set to none, dockerhub, ghcr or both"
         required: true
         type: string
+      # delete GHCR images older than ... (default: "one year"; state "keep" to skip)
+      ghcr-retention-policy:
+        required: false
+        default: one year
+        type: string
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -53,7 +58,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: EmbarkStudios/cargo-deny-action@v1
 
   build:
@@ -99,7 +104,7 @@ jobs:
           else
             echo "profilestr=--profile $PROFILE" >> $GITHUB_ENV
           fi
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 #      - uses: actions-rs/toolchain@v1
 #        if: false
 #        with:
@@ -136,7 +141,7 @@ jobs:
             echo EOF
           } >> "$GITHUB_ENV"
       - name: Upload (bins)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binaries-${{ matrix.arch }}-${{ matrix.features }}
           if-no-files-found: error
@@ -144,7 +149,7 @@ jobs:
             ${{ env.bins }}
       - name: Upload (test, native only)
         if: matrix.arch == 'amd64'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: testbinaries-${{ matrix.arch }}-${{ matrix.features }}
           if-no-files-found: error
@@ -163,12 +168,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download bins
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: binaries-amd64-${{ matrix.features }}
           path: artifacts/binaries-amd64/
       - name: Download tests
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: testbinaries-amd64-${{ matrix.features }}
           path: testbinaries/
@@ -219,6 +224,7 @@ jobs:
       artifact-name: '*'
       binary-name: ${{ matrix.components }}
       push-to: ${{ inputs.push-to }}
+      ghcr-retention-policy: ${{ inputs.ghcr-retention-policy }}
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
