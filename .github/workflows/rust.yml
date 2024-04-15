@@ -166,7 +166,7 @@ jobs:
         features: ${{ fromJSON(inputs.features) }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download bins
         uses: actions/download-artifact@v4
         with:
