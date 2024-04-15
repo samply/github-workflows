@@ -78,7 +78,7 @@ on:
 
 jobs:
   tidy-ghcr:
-    name: Tidy GHCR images older than ${{ inputs.ghcr-retention-policy }}
+    name: Tidy GHCR images (${{ inputs.image-name }})
     runs-on: ubuntu-latest
     if: ${{ inputs.ghcr-retention-policy != 'keep' }}
 
@@ -86,7 +86,7 @@ jobs:
       - name: Delete old images
         uses: snok/container-retention-policy@v2
         with:
-          image-names: ${{ github.event.repository.name }}
+          image-names: ${{ inputs.image-name }}
           cut-off: ${{ inputs.ghcr-retention-policy }} ago UTC
           account-type: org
           org-name: samply
