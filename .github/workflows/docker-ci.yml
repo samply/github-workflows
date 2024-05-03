@@ -199,6 +199,9 @@ jobs:
           # NOTE: Not specifying build platforms here due to conflict with the load option!
           load: true
           tags: ${{ inputs.image-name }}
+          pull: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
@@ -267,6 +270,10 @@ jobs:
           build-args: ${{ inputs.build-args }}
           labels: ${{ steps.docker-meta-ghcr-primary.outputs.labels }}${{ steps.docker-meta-ghcr-commit.outputs.labels }}
           tags: ${{ steps.docker-meta-ghcr-primary.outputs.tags }}${{ steps.docker-meta-ghcr-commit.outputs.tags }}
+          pull: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
 
       - name: "Docker Hub: Generate Image Tags"
         id: docker-meta
@@ -305,4 +312,7 @@ jobs:
           build-args: ${{ inputs.build-args }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
+          pull: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
