@@ -190,7 +190,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and Export to Docker
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: ${{ env.security-scan != 'false' }}
         with:
           context: ${{ inputs.build-context }}
@@ -261,7 +261,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "GHCR: Build and Push"
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
@@ -302,7 +302,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: "Docker Hub: Build and Push"
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: env.dockerhub && github.event_name != 'pull_request'
         with:
           context: ${{ inputs.build-context }}
