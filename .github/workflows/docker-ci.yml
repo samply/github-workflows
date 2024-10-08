@@ -343,7 +343,7 @@ jobs:
 
       - name: "VerbIS Harbor: Login"
         uses: docker/login-action@v3
-        if: env.verbishabor && github.event_name != 'pull_request'
+        if: env.verbisharbor && github.event_name != 'pull_request'
         with:
           registry: docker.verbis.dkfz.de
           username: ${{ secrets.DOCKERVERBIS_USER }}
@@ -351,7 +351,7 @@ jobs:
 
       - name: "VerbIS Harbor: Build and Push"
         uses: docker/build-push-action@v5
-        if: env.verbishabor && github.event_name != 'pull_request'
+        if: env.verbisharbor && github.event_name != 'pull_request'
         with:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
