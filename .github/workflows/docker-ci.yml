@@ -332,7 +332,7 @@ jobs:
         if: env.verbisharbor && github.event_name != 'pull_request'
         with:
           images: |
-            ${{ inputs.image-name }}
+            docker.verbis.dkfz.de/${{ inputs.image-name }}
           tags: |
             type=schedule
             type=ref,event=branch
