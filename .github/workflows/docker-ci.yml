@@ -254,7 +254,7 @@ jobs:
 
       - name: "GHCR: Define Image Tags (commit-based only)"
         id: docker-meta-ghcr-commit
-        if: env.ghcr != 'true'
+        if: env.ghcr
         uses: docker/metadata-action@v5
         with:
           images: |
@@ -266,6 +266,7 @@ jobs:
             suffix=${{ inputs.image-tag-suffix }},onlatest=true
 
       - name: "GHCR: Login"
+        if: env.ghcr
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -273,6 +274,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "GHCR: Build and Push"
+        if: env.ghcr
         uses: docker/build-push-action@v5
         with:
           context: ${{ inputs.build-context }}
