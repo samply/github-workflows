@@ -213,6 +213,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Update Trivy DB Cache
+        run: |
+          trivy image --download-db-only --cache-dir /root/.cache/trivy || echo "Using cached DB"
+
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
         if: ${{ env.security-scan != 'false' }}
@@ -222,6 +226,7 @@ jobs:
           timeout: '10m0s'
           ignore-unfixed: true
           output: trivy-results.sarif
+          args: "--cache-dir /root/.cache/trivy"
         env:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
 
