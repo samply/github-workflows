@@ -213,9 +213,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Update Trivy DB Cache
-        run: |
-          trivy image --download-db-only --cache-dir /root/.cache/trivy || echo "Using cached DB"
+      - name: Cache Trivy DB
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/trivy/db
+          key: trivy-db-${{ runner.os }}
+          restore-keys: |
+            trivy-db-${{ runner.os }}-
 
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
