@@ -223,7 +223,8 @@ jobs:
           ignore-unfixed: true
           output: trivy-results.sarif
         env:
-          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-java-db
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
 
       - name: Upload Trivy Scan Results to GitHub Security Tab
         uses: github/codeql-action/upload-sarif@v3
