@@ -51,6 +51,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   PROFILE: ${{ inputs.profile }}
+  SQLX_OFFLINE: true
 
 jobs:
   pre-check:
@@ -123,10 +124,15 @@ jobs:
           use-cross: ${{ env.is_cross }}
           command: build
           args: --target ${{ env.rustarch }} ${{ matrix.features && format('--features {0}', matrix.features) }} ${{ env.profilestr }}
-      - name: Build (native)
+      - name: Build (native) new
         if: env.is_cross == 'false'
         run: |
-          cargo build --tests --bins --message-format=json --target ${{ env.rustarch }} ${{ matrix.features && format('--features {0}', matrix.features) }} ${{ env.profilestr }}
+          echo "Compiling now"
+          ls -lah
+          cat .cargo/config.toml
+          ls .sqlx
+          env
+          cargo build --tests --bins --target ${{ env.rustarch }} ${{ matrix.features && format('--features {0}', matrix.features) }} ${{ env.profilestr }}
       - name: Prepare bins
         env:
           PROFILE: ${{ env.PROFILE }}
