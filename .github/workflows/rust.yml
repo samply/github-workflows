@@ -126,12 +126,7 @@ jobs:
       - name: Build (native)
         if: env.is_cross == 'false'
         run: |
-          OUT=$(cargo build --tests --bins --message-format=json --target ${{ env.rustarch }} ${{ matrix.features && format('--features {0}', matrix.features) }} ${{ env.profilestr }})
-          TESTS=$(echo "$OUT" | jq -r 'select(.profile.test == true) | .executable | select(. != null)')
-          mkdir -p testbinaries/
-          for testbin in $TESTS; do
-            mv -v $testbin testbinaries/
-          done
+          cargo build --tests --bins --message-format=json --target ${{ env.rustarch }} ${{ matrix.features && format('--features {0}', matrix.features) }} ${{ env.profilestr }}
       - name: Prepare bins
         env:
           PROFILE: ${{ env.PROFILE }}
