@@ -42,6 +42,11 @@ on:
         required: false
         default: one year
         type: string
+      cargo-fmt-check:
+        description: "Whether to check code style with cargo fmt"
+        required: false
+        type: boolean
+        default: false
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -189,6 +194,15 @@ jobs:
         if: ${{ inputs.test-via-script }}
         run: |
           ./dev/test ci ${{ matrix.features && format('--features {0}', matrix.features) }}
+
+  cargo-fmt-check:
+    name: Cargo fmt check
+    if: ${{ inputs.cargo-fmt-check }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fmt --all --check
 
   docker:
     name: Docker
