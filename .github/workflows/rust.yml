@@ -61,6 +61,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: Write deny.toml
       run: |
+          if [[ -f "deny.toml" ]]; then
+              echo "WARNING: File deny.toml exists and will be ignored by CI! Consider removing it from your project!"
+          fi
           cat <<EOF > deny.toml
           [licenses]
           version = 2
