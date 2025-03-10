@@ -75,6 +75,10 @@ on:
         required: true
       DOCKERHUB_TOKEN:
         required: true
+      DOCKERVERBIS_USER:
+        required: false
+      DOCKERVERBIS_TOKEN:
+        required: false
 
 jobs:
   tidy-ghcr:
@@ -124,7 +128,9 @@ jobs:
           fi
           GHCR=
           DOCKERHUB=
+          VERBISHARBOR=
           case "$PUSH_TO" in
+            # TODO: Adapt to new option verbisharbor
             both)
               GHCR=true
               DOCKERHUB=true
@@ -134,6 +140,9 @@ jobs:
               ;;
             ghcr)
               GHCR=true
+              ;;
+            verbisharbor)
+              VERBISHARBOR=true
               ;;
             none)
               ;;
@@ -145,6 +154,7 @@ jobs:
           echo "build_platforms=$RESULT" >> $GITHUB_ENV
           echo "dockerhub=$DOCKERHUB" >> $GITHUB_ENV
           echo "ghcr=$GHCR" >> $GITHUB_ENV
+          echo "verbisharbor=$VERBISHARBOR" >> $GITHUB_ENV
 
       - name: Analyze repository
         run: |
@@ -212,9 +222,11 @@ jobs:
           timeout: '10m0s'
           ignore-unfixed: true
           output: trivy-results.sarif
+        env:
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db
 
       - name: Upload Trivy Scan Results to GitHub Security Tab
-        uses: github/codeql-action/upload-sarif@codeql-bundle-20211208
+        uses: github/codeql-action/upload-sarif@v3
         if: ${{ env.security-scan != 'false' }}
         with:
           sarif_file: trivy-results.sarif
@@ -233,7 +245,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha,prefix=commit-${{ inputs.image-tag-prefix }},suffix=${{ inputs.image-tag-suffix }}commit-
+            type=sha,prefix=commit-${{ inputs.image-tag-prefix }},suffix=${{ inputs.image-tag-suffix }}
             # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
           flavor: |
@@ -254,6 +266,7 @@ jobs:
             suffix=${{ inputs.image-tag-suffix }},onlatest=true
 
       - name: "GHCR: Login"
+        if: env.ghcr
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -261,6 +274,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "GHCR: Build and Push"
+        if: env.ghcr
         uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.build-context }}
@@ -316,3 +330,44 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: "VerbIS Harbor: Generate Image Tags"
+        id: docker-meta-verbis-harbor
+        uses: docker/metadata-action@v5
+        if: env.verbisharbor && github.event_name != 'pull_request'
+        with:
+          images: |
+            docker.verbis.dkfz.de/${{ inputs.image-name }}
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # set latest tag for default branch
+            type=raw,value=latest,enable={{is_default_branch}}
+          flavor: |
+            prefix=${{ inputs.image-tag-prefix }},onlatest=true
+            suffix=${{ inputs.image-tag-suffix }},onlatest=true
+
+      - name: "VerbIS Harbor: Login"
+        uses: docker/login-action@v3
+        if: env.verbisharbor && github.event_name != 'pull_request'
+        with:
+          registry: docker.verbis.dkfz.de
+          username: ${{ secrets.DOCKERVERBIS_USER }}
+          password: ${{ secrets.DOCKERVERBIS_TOKEN }}
+
+      - name: "VerbIS Harbor: Build and Push"
+        uses: docker/build-push-action@v5
+        if: env.verbisharbor && github.event_name != 'pull_request'
+        with:
+          context: ${{ inputs.build-context }}
+          file: ${{ inputs.build-file }}
+          push: true
+          platforms: ${{ env.build_platforms }}
+          build-args: ${{ inputs.build-args }}
+          tags: ${{ steps.docker-meta-verbis-harbor.outputs.tags }}
+          labels: ${{ steps.docker-meta-verbis-harbor.outputs.labels }}
+          pull: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
