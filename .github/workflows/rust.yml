@@ -65,7 +65,28 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: EmbarkStudios/cargo-deny-action@v1
+    - name: Write deny.toml
+      run: |
+          if [[ -f "deny.toml" ]]; then
+              echo "::warning title=cargo-deny::File deny.toml exists and will be ignored by CI! Consider removing it from your project!"
+          fi
+          cat <<EOF > deny.toml
+          [licenses]
+          version = 2
+          allow = [
+              "MIT",
+              "Apache-2.0",
+              "ISC",
+              "BSD-3-Clause",
+              "Unicode-DFS-2016",
+              "Unicode-3.0",
+              "Zlib",
+              "OpenSSL",
+          ]
+          [sources.allow-org]
+          github = ["samply"]
+          EOF
+    - uses: EmbarkStudios/cargo-deny-action@v2
 
   build:
     name: Build
