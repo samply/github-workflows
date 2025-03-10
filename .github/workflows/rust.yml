@@ -82,6 +82,7 @@ jobs:
               "Unicode-3.0",
               "Zlib",
               "OpenSSL",
+              "MPL-2.0",
           ]
           [sources.allow-org]
           github = ["samply"]
