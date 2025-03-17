@@ -89,7 +89,7 @@ jobs:
           [advisories]
           ignore = [
             { id = "RUSTSEC-2023-0071", reason = "beam needs it to build" },
-            { crate = "paste@1.0.15", reason = "paste is unmaintained but focus transitively depends on it" },
+            { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained but focus transitively depends on it" },
           ]
           EOF
     - uses: EmbarkStudios/cargo-deny-action@v2
