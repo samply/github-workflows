@@ -86,6 +86,8 @@ jobs:
           ]
           [sources.allow-org]
           github = ["samply"]
+          [advisories]
+          unmaintained = "none"
           EOF
     - uses: EmbarkStudios/cargo-deny-action@v2
 
