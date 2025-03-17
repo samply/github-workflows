@@ -86,6 +86,11 @@ jobs:
           ]
           [sources.allow-org]
           github = ["samply"]
+          [advisories]
+          unmaintained = "none"
+          ignore = [
+            "RUSTSEC-2023-0071"
+          ]
           EOF
     - uses: EmbarkStudios/cargo-deny-action@v2
 
