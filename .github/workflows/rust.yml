@@ -87,9 +87,9 @@ jobs:
           [sources.allow-org]
           github = ["samply"]
           [advisories]
-          unmaintained = "none"
           ignore = [
-            "RUSTSEC-2023-0071"
+            { id = "RUSTSEC-2023-0071", reason = "beam needs it to build" },
+            { crate = "paste@1.0.15", reason = "paste is unmaintained but focus transitively depends on it" },
           ]
           EOF
     - uses: EmbarkStudios/cargo-deny-action@v2
