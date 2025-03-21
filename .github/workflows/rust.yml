@@ -89,6 +89,7 @@ jobs:
           [advisories]
           ignore = [
             { id = "RUSTSEC-2023-0071", reason = "beam needs it to build" },
+            { id = "RUSTSEC-2024-0384", reason = "transative dep of beam"},
             { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained but focus transitively depends on it" },
           ]
           EOF
