@@ -84,7 +84,7 @@ jobs:
   tidy-ghcr:
     name: Tidy GHCR images (${{ inputs.image-name }})
     runs-on: ubuntu-latest
-    if: ${{ inputs.ghcr-retention-policy != 'keep' }}
+    if: ${{ inputs.ghcr-retention-policy != 'keep' && (inputs.push-to == 'ghcr' || inputs.push-to == 'both') }}
 
     steps:
       - name: Compute image name
