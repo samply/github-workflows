@@ -83,6 +83,7 @@ jobs:
               "Zlib",
               "OpenSSL",
               "MPL-2.0",
+              "CDLA-Permissive-2.0"
           ]
           [sources.allow-org]
           github = ["samply"]
