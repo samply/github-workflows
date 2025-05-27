@@ -181,6 +181,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          # see https://github.com/actions/toolkit/pull/1874
+          pattern: "!*.dockerbuild"
 
       - name: Replace binary name in Dockerfile
         if: ${{ inputs.binary-name }}
