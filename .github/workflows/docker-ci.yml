@@ -8,8 +8,8 @@
 #     * Running the action on push of a semver tag of the form "v<major>.<minor>.<patch>" without specified pre-release adds the tags "<major>" (if not 0), "<major>.<minor>", "<major>.<minor>.<patch>", and "latest"
 #     * Running the action on push of a semver tag of the form "v<major>.<minor>.<patch>-<prerelease>" adds the tag "<major>.<minor>.<patch>-<prerelease>"
 #     * Running the action on a scheduled basis adds the tag "nightly"
-#     * If GHCR is enabled, running the action on pull request pushes to GHCR with the tag "pr-<pr-number>" but does not push to Docker Hub and VerbIS Harbor
-#     * If GHCR is enabled, always adds the tag "sha-<short-commit-sha>" on GHCR but not on Docker Hub and VerbIS Harbor
+#     * Running the action on pull request pushes only to GHCR (if enabled) with the tag "pr-<pr-number>"
+#     * When pushing to GHCR (if enabled) always adds the tag "sha-<short-commit-sha>"
 # 5) Rebuild the image for all necessary platforms an publish it based on the applied tags from 4.
 #
 # An usage example for this action is provided in the samply organization: https://github.com/samply/.github/blob/main/workflow-templates/docker-ci-template.yml
