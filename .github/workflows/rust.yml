@@ -97,8 +97,6 @@ jobs:
     - uses: EmbarkStudios/cargo-deny-action@v2
 
   build:
-    name: "Build (${{ matrix.arch }}: ${{ matrix.features }})"
-
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.architectures) }}
