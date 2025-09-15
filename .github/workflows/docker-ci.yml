@@ -206,6 +206,7 @@ jobs:
         uses: docker/build-push-action@v6
         if: ${{ env.security-scan != 'false' }}
         with:
+          platforms: ${{ env.build_platforms }}
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
           build-args: ${{ inputs.build-args }}
