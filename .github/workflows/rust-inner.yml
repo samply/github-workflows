@@ -1,0 +1,64 @@
+on:
+  workflow_call:
+    inputs:
+      architecture:
+        description: "The ONE architecture to build for, e.g. amd64 or arm64"
+        required: true
+        type: string
+      features:
+        required: true
+        type: string
+      profile:
+        required: true
+        type: string
+
+jobs:
+  build-rust:
+    runs-on: ${{ inputs.architecture == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set profile ${{ inputs.profile }}
+        env:
+          PROFILE: ${{ inputs.profile }}
+        run: |
+          if [ "${PROFILE}" == "release" ]; then
+            echo "profilestr=--release" >> $GITHUB_ENV
+          elif [ "${PROFILE}" == "debug" ]; then
+            echo "profilestr=" >> $GITHUB_ENV
+          else
+            echo "profilestr=--profile $PROFILE" >> $GITHUB_ENV
+          fi
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ inputs.architecture }}-${{ inputs.profile }}
+          prefix-key: ${{ inputs.cache-version }}-rust-${{ inputs.features && format('features_{0}', inputs.features) || 'nofeatures' }} # Increase to invalidate old caches.
+      - name: Build
+        run: |
+          OUT=$(cargo build --tests --bins --message-format=json ${{ inputs.features && format('--features {0}', inputs.features) }} ${{ env.profilestr }})
+          TESTS=$(echo "$OUT" | jq -r 'select(.profile.test == true) | .executable | select(. != null)')
+          mkdir -p testbinaries/
+          for testbin in $TESTS; do
+            mv -v $testbin testbinaries/
+          done
+      - name: Prepare bins
+        run: |
+          {
+            echo 'bins<<EOF'
+            find target/ -type d -name ${{ inputs.profile }} -exec find {} -maxdepth 1 -type f -executable \;
+            echo EOF
+          } >> "$GITHUB_ENV"
+      - name: Upload (bins)
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ inputs.architecture }}-${{ inputs.features }}
+          if-no-files-found: error
+          path: |
+            ${{ env.bins }}
+      - name: Upload (test, native only)
+        if: inputs.architecture == 'amd64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: testbinaries-${{ inputs.architecture }}-${{ inputs.features }}
+          if-no-files-found: error
+          path: |
+            testbinaries/*
