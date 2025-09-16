@@ -348,7 +348,7 @@ jobs:
           password: ${{ secrets.DOCKERVERBIS_TOKEN }}
 
       - name: "VerbIS Harbor: Build and Push"
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: env.verbisharbor && github.event_name != 'pull_request'
         with:
           context: ${{ inputs.build-context }}
