@@ -54,7 +54,7 @@ jobs:
       uses: actions/checkout@v5
 
     - name: Setup Java for Building the Package
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.java-distribution }}
@@ -79,7 +79,7 @@ jobs:
     - name: Setup Java for Publishing the Package
       # Ensure, that only packages get pushed, that are derived from main or develop branch
       if: ${{ inputs.publish && github.ref_type == 'tag' }}
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         java-version: ${{ inputs.java-version }}
         distribution: ${{ inputs.java-distribution }}
