@@ -168,7 +168,7 @@ jobs:
           fi
 
       - name: Checkout Source Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download specific Build Artifact to artifacts/
         if: ${{ inputs.artifact-name != '' && inputs.artifact-name != '*' }}
@@ -347,7 +347,7 @@ jobs:
           password: ${{ secrets.DOCKERVERBIS_TOKEN }}
 
       - name: "VerbIS Harbor: Build and Push"
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: env.verbisharbor && github.event_name != 'pull_request'
         with:
           context: ${{ inputs.build-context }}
