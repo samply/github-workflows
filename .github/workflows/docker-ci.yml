@@ -264,16 +264,16 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "GHCR: Build and Push"
-        if: env.ghcr
         uses: docker/build-push-action@v6
+        if: env.ghcr
         with:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
           push: true
           platforms: ${{ env.build_platforms }}
           build-args: ${{ inputs.build-args }}
-          labels: ${{ steps.docker-meta-ghcr-primary.outputs.labels }}${{ steps.docker-meta-ghcr-commit.outputs.labels }}
           tags: ${{ steps.docker-meta-ghcr-primary.outputs.tags }}${{ steps.docker-meta-ghcr-commit.outputs.tags }}
+          labels: ${{ steps.docker-meta-ghcr-primary.outputs.labels }}${{ steps.docker-meta-ghcr-commit.outputs.labels }}
           pull: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
