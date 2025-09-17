@@ -278,7 +278,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-
       - name: "Docker Hub: Generate Image Tags"
         id: docker-meta
         uses: docker/metadata-action@v5
