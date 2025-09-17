@@ -102,8 +102,7 @@ jobs:
         arch: ${{ fromJSON(inputs.architectures) }}
         features: ${{ fromJSON(inputs.features) }}
 
-    # TODO: once merged to main, change to ./.github/workflows/rust-inner.yml
-    uses: samply/github-workflows/.github/workflows/rust-inner.yml@faster
+    uses: ./.github/workflows/rust-inner.yml
     with:
       architecture: ${{ matrix.arch }}
       features: ${{ matrix.features }}
