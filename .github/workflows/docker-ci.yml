@@ -7,7 +7,7 @@
 #     * Running the action on push to a git branch adds the tag "<branchname>"
 #     * Running the action on push of a semver tag of the form "v<major>.<minor>.<patch>" without specified pre-release adds the tags "<major>" (if not 0), "<major>.<minor>", "<major>.<minor>.<patch>", and "latest"
 #     * Running the action on push of a semver tag of the form "v<major>.<minor>.<patch>-<prerelease>" adds the tag "<major>.<minor>.<patch>-<prerelease>"
-#     * Running the action on a scheduled basis adds the tag "nightly"
+#     * Running the action on a scheduled basis adds the same tag as a branch push ("<branchname>")
 #     * Running the action on pull request pushes only to GHCR (if enabled) with the tag "pr-<pr-number>"
 #     * When pushing to GHCR (if enabled) always adds the tag "sha-<short-commit-sha>"
 # 5) Rebuild the image for all necessary platforms an publish it based on the applied tags from 4.
@@ -62,24 +62,21 @@ on:
       binary-name:
         required: false
         type: string
-      # Set to none, dockerhub, ghcr or both
+      # Set to none, docker.io or ghcr.io. By default, will push to dockerhub for branches "main" and "develop" and to ghcr for all other branches.
       push-to:
-        required: true
+        required: false
         type: string
-      # delete GHCR images older than ... (default: "one year"; state "keep" to skip)
+        default: 'auto'
+      # delete GHCR images older than ... (default: "6months"; state "keep" to skip)
       ghcr-retention-policy:
         required: false
-        default: one year
+        default: 6months
         type: string
     secrets:
       DOCKERHUB_USERNAME:
         required: true
       DOCKERHUB_TOKEN:
         required: true
-      DOCKERVERBIS_USER:
-        required: false
-      DOCKERVERBIS_TOKEN:
-        required: false
 
 jobs:
   tidy-ghcr:
@@ -94,14 +91,12 @@ jobs:
           echo "imgnameshort=${IMGNAME/samply\//}" >> $GITHUB_ENV
 
       - name: Delete old images
-        uses: snok/container-retention-policy@v2
+        uses: snok/container-retention-policy@v3.0.0
         with:
           image-names: ${{ env.imgnameshort }}
-          cut-off: ${{ inputs.ghcr-retention-policy }} ago UTC
-          account-type: org
-          org-name: samply
+          cut-off: ${{ inputs.ghcr-retention-policy }}
+          account: samply
           token: ${{ secrets.GITHUB_TOKEN }}
-          token-type: github-token
 
   build:
     name: Dockerize${{ inputs.binary-name && format(' ({0})', inputs.binary-name) }}${{ inputs.image-tag-suffix && format(' ({0})', inputs.image-tag-suffix) }}
@@ -115,6 +110,8 @@ jobs:
           PUSH_TO: ${{ inputs.push-to }}
         run: |
           RESULT=""
+
+          ## Architecture
           if [ "$ARCHS_SHORT" == "" ]; then
             RESULT="$ARCHS_LONG"
           else
@@ -127,41 +124,45 @@ jobs:
               fi
             done
           fi
-          GHCR=
-          DOCKERHUB=
-          VERBISHARBOR=
+
+          ## Registry
+          if [[ "$PUSH_TO" == "auto" ]]; then
+            # If this is a tag, push to dockerhub
+            if [[ "${{ github.ref_type }}" == "tag" ]]; then
+              PUSH_TO="docker.io"
+            else
+              # If this is branch main or develop, push to Docker Hub
+              case "${{ github.ref_name }}" in
+                main|develop)
+                  PUSH_TO="docker.io"
+                  ;;
+                *)
+                  # Otherwise push to ghcr
+                  PUSH_TO="ghcr.io"
+                  ;;
+              esac
+            fi
+          fi
           case "$PUSH_TO" in
-            # TODO: Adapt to new option verbisharbor
-            both)
-              GHCR=true
-              DOCKERHUB=true
-              ;;
-            dockerhub)
-              DOCKERHUB=true
-              ;;
-            ghcr)
-              GHCR=true
-              ;;
-            verbisharbor)
-              VERBISHARBOR=true
+            docker.io|ghcr.io)
               ;;
             none)
+              PUSH_TO=""
               ;;
             *)
-              echo "Unsupported push target: \"$PUSH_TO\". Please supply none, dockerhub, ghcr or both."
+              echo "Unsupported push target: \"$PUSH_TO\". Please supply auto, none, docker.io or ghcr.io"
               exit 1
           esac
+
           echo "Resulting build_platforms is \"$RESULT\""
           echo "build_platforms=$RESULT" >> $GITHUB_ENV
-          echo "dockerhub=$DOCKERHUB" >> $GITHUB_ENV
-          echo "ghcr=$GHCR" >> $GITHUB_ENV
-          echo "verbisharbor=$VERBISHARBOR" >> $GITHUB_ENV
+          echo "registry=$PUSH_TO" >> $GITHUB_ENV
 
       - name: Analyze repository
         run: |
           VISIBILITY="$(curl https://api.github.com/repos/${{ github.repository }} | jq -r .visibility)"
           if [ "$VISIBILITY" != "public" ]; then
-            echo "Repository is not public -- will skip security scans and push to github container registry."
+            echo "Repository is not public -- will skip security scans."
             echo "security-scan=false" >> $GITHUB_ENV
           else
             echo "security-scan=true" >> $GITHUB_ENV
@@ -193,23 +194,39 @@ jobs:
         run: |
           sed -i "s,/usr/local/bin/samply,/usr/local/bin/${BINARY_NAME},g" ${BUILD_FILE}
 
-      - name: ls
-        run: ls -laR
-        
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ env.build_platforms }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        id: setup-buildx
+
+      - name: "Docker: Cache (1/2)"
+        uses: actions/cache@v4
+        id: cache
+        with:
+          path: dockerci-cache
+          key: dockerci-${{ hashFiles(inputs.build-file) }}-${{ github.run_id }}
+          restore-keys: |
+            dockerci-${{ hashFiles(inputs.build-file) }}
+
+      - name: "Docker: Cache (2/2)"
+        uses: reproducible-containers/buildkit-cache-dance@v3
+        with:
+          builder: ${{ steps.setup-buildx.outputs.name }}
+          cache-dir: dockerci-cache
+          dockerfile: ${{ inputs.build-file }}
 
       - name: Build and Export to Docker
         uses: docker/build-push-action@v6
         if: ${{ env.security-scan != 'false' }}
         with:
+          # NOTE: Not specifying build platforms here due to conflict with the load option!
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
           build-args: ${{ inputs.build-args }}
-          # NOTE: Not specifying build platforms here due to conflict with the load option!
           load: true
           tags: ${{ inputs.image-name }}
           pull: true
@@ -234,79 +251,40 @@ jobs:
         with:
           sarif_file: trivy-results.sarif
 
-      - name: "GHCR: Generate Image Tags"
-        id: docker-meta-ghcr-primary
-        if: env.ghcr
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            "ghcr.io/${{ inputs.image-name }}"
-          tags: |
-            type=schedule,pattern=nightly
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
-            type=sha
-          flavor: |
-            # adds "latest" tag if any rule of type=ref,event=tag, type=semver, type=pep440, or type=match is specified and matches (only type=semver is specified here)
-            latest=auto
-            prefix=${{ inputs.image-tag-prefix }},onlatest=true
-            suffix=${{ inputs.image-tag-suffix }},onlatest=true
-
-      - name: "GHCR: Login"
-        if: env.ghcr
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: "GHCR: Build and Push"
-        uses: docker/build-push-action@v6
-        if: env.ghcr
-        with:
-          context: ${{ inputs.build-context }}
-          file: ${{ inputs.build-file }}
-          push: true
-          platforms: ${{ env.build_platforms }}
-          build-args: ${{ inputs.build-args }}
-          tags: ${{ steps.docker-meta-ghcr-primary.outputs.tags }}${{ steps.docker-meta-ghcr-commit.outputs.tags }}
-          labels: ${{ steps.docker-meta-ghcr-primary.outputs.labels }}${{ steps.docker-meta-ghcr-commit.outputs.labels }}
-          pull: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: "Docker Hub: Generate Image Tags"
+      - name: "Docker: Generate Image Tags"
         id: docker-meta
+        if: env.registry
         uses: docker/metadata-action@v5
-        if: env.dockerhub && github.event_name != 'pull_request'
         with:
           images: |
-            ${{ inputs.image-name }}
+            "${{ env.registry }}/${{ inputs.image-name }}"
           tags: |
-            type=schedule,pattern=nightly
+            # Scheduled runs: use the same branch tag as branch pushes
+            type=raw,value=${{ github.ref_name }},enable=${{ github.event_name == 'schedule' }}
+            # Branch pushes
             type=ref,event=branch
+            # PRs
+            type=ref,event=pr
+            # Semver tags
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
           flavor: |
-            # adds "latest" tag if any rule of type=ref,event=tag, type=semver, type=pep440, or type=match is specified and matches (only type=semver is specified here)
-            latest=auto
+            # The "latest" tag is set according to these rules: https://github.com/docker/metadata-action#latest-tag
             prefix=${{ inputs.image-tag-prefix }},onlatest=true
             suffix=${{ inputs.image-tag-suffix }},onlatest=true
 
-      - name: "Docker Hub: Login"
+      - name: "Docker: Login to ${{ env.registry }}"
+        if: env.registry
         uses: docker/login-action@v3
-        if: env.dockerhub && github.event_name != 'pull_request'
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.registry }}
+          username: ${{ env.registry == 'ghcr.io' && github.actor         || secrets.DOCKERHUB_USERNAME }}
+          password: ${{ env.registry == 'ghcr.io' && secrets.GITHUB_TOKEN || secrets.DOCKERHUB_TOKEN }}
 
-      - name: "Docker Hub: Build and Push"
+      - name: "Docker: Build and Push to ${{ env.registry }}"
         uses: docker/build-push-action@v6
-        if: env.dockerhub && github.event_name != 'pull_request'
+        if: env.registry
         with:
           context: ${{ inputs.build-context }}
           file: ${{ inputs.build-file }}
@@ -315,48 +293,6 @@ jobs:
           build-args: ${{ inputs.build-args }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
-          pull: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: "VerbIS Harbor: Generate Image Tags"
-        id: docker-meta-verbis-harbor
-        uses: docker/metadata-action@v5
-        if: env.verbisharbor && github.event_name != 'pull_request'
-        with:
-          images: |
-            docker.verbis.dkfz.de/${{ inputs.image-name }}
-          tags: |
-            type=schedule,pattern=nightly
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
-          flavor: |
-            # adds "latest" tag if any rule of type=ref,event=tag, type=semver, type=pep440, or type=match is specified and matches (only type=semver is specified here)
-            latest=auto
-            prefix=${{ inputs.image-tag-prefix }},onlatest=true
-            suffix=${{ inputs.image-tag-suffix }},onlatest=true
-
-      - name: "VerbIS Harbor: Login"
-        uses: docker/login-action@v3
-        if: env.verbisharbor && github.event_name != 'pull_request'
-        with:
-          registry: docker.verbis.dkfz.de
-          username: ${{ secrets.DOCKERVERBIS_USER }}
-          password: ${{ secrets.DOCKERVERBIS_TOKEN }}
-
-      - name: "VerbIS Harbor: Build and Push"
-        uses: docker/build-push-action@v6
-        if: env.verbisharbor && github.event_name != 'pull_request'
-        with:
-          context: ${{ inputs.build-context }}
-          file: ${{ inputs.build-file }}
-          push: true
-          platforms: ${{ env.build_platforms }}
-          build-args: ${{ inputs.build-args }}
-          tags: ${{ steps.docker-meta-verbis-harbor.outputs.tags }}
-          labels: ${{ steps.docker-meta-verbis-harbor.outputs.labels }}
           pull: true
           cache-from: type=gha
           cache-to: type=gha,mode=max

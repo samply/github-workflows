@@ -34,11 +34,12 @@ on:
         type: boolean
         default: false
       push-to:
-        description: "Set to none, dockerhub, ghcr or both"
-        required: true
+        description: "Set to none, docker.io or ghcr.io. By default, will push to dockerhub for branches 'main' and 'develop' and to ghcr for all other branches"
+        required: false
         type: string
-      # delete GHCR images older than ... (default: "one year"; state "keep" to skip)
+        default: "auto"
       ghcr-retention-policy:
+        description: "Set a retention policy for GHCR images, e.g. 'one year', '30 days' or 'keep' to disable cleanup"
         required: false
         default: one year
         type: string
