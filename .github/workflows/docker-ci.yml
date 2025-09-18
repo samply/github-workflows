@@ -7,7 +7,7 @@
 #     * Running the action on push to a git branch adds the tag "<branchname>"
 #     * Running the action on push of a semver tag of the form "v<major>.<minor>.<patch>" without specified pre-release adds the tags "<major>" (if not 0), "<major>.<minor>", "<major>.<minor>.<patch>", and "latest"
 #     * Running the action on push of a semver tag of the form "v<major>.<minor>.<patch>-<prerelease>" adds the tag "<major>.<minor>.<patch>-<prerelease>"
-#     * Running the action on a scheduled basis adds the tag "nightly"
+#     * Running the action on a scheduled basis adds the same tag as a branch push ("<branchname>")
 #     * Running the action on pull request pushes only to GHCR (if enabled) with the tag "pr-<pr-number>"
 #     * When pushing to GHCR (if enabled) always adds the tag "sha-<short-commit-sha>"
 # 5) Rebuild the image for all necessary platforms an publish it based on the applied tags from 4.
@@ -256,9 +256,13 @@ jobs:
           images: |
             "${{ env.registry }}/${{ inputs.image-name }}"
           tags: |
-            type=schedule,pattern=nightly
+            # Scheduled runs: use the same branch tag as branch pushes
+            type=raw,value=${{ github.ref_name }},enable=${{ github.event_name == 'schedule' }}
+            # Branch pushes
             type=ref,event=branch
+            # PRs
             type=ref,event=pr
+            # Semver tags
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
