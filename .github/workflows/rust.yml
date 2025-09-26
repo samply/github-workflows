@@ -121,12 +121,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Download bins
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: binaries-amd64-${{ matrix.features }}
           path: artifacts/binaries-amd64/
       - name: Download tests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: testbinaries-amd64-${{ matrix.features }}
           path: testbinaries/
