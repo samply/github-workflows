@@ -34,13 +34,14 @@ on:
         type: boolean
         default: false
       push-to:
-        description: "Set to none, dockerhub, ghcr or both"
-        required: true
-        type: string
-      # delete GHCR images older than ... (default: "one year"; state "keep" to skip)
-      ghcr-retention-policy:
+        description: "Set to none, docker.io or ghcr.io. By default, will push to dockerhub for branches 'main' and 'develop' and to ghcr for all other branches"
         required: false
-        default: one year
+        type: string
+        default: "auto"
+      ghcr-retention-policy:
+        description: "delete GHCR images older than ... (default: '6months'; state 'keep' to skip)"
+        required: false
+        default: '6months'
         type: string
       cargo-fmt-check:
         description: "Whether to check code style with cargo fmt"
@@ -148,6 +149,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - run: cargo fmt --all --check
 
   docker:
