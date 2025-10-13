@@ -40,7 +40,13 @@ jobs:
           prefix-key: ${{ inputs.cache-version }}-rust-${{ inputs.features && format('features_{0}', inputs.features) || 'nofeatures' }} # Increase to invalidate old caches.
       - name: Build
         run: |
+          set +e
           OUT=$(cargo build --tests --bins --message-format=json ${{ inputs.features && format('--features {0}', inputs.features) }} ${{ env.profilestr }})
+          if [ $? -ne 0 ]; then
+            echo "$OUT" | jq -r 'select(.message.rendered != null) | .message.rendered'
+            exit 1
+          fi
+          set -e
           TESTS=$(echo "$OUT" | jq -r 'select(.profile.test == true) | .executable | select(. != null)')
           mkdir -p testbinaries/
           for testbin in $TESTS; do
