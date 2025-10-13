@@ -55,9 +55,7 @@ on:
         required: true
 
 env:
-  CARGO_TERM_COLOR: always
   PROFILE: ${{ inputs.profile }}
-  SQLX_OFFLINE: true
 
 jobs:
   pre-check:

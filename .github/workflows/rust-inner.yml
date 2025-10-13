@@ -17,6 +17,10 @@ on:
         type: string
         default: "v0"
 
+env:
+  CARGO_TERM_COLOR: always
+  SQLX_OFFLINE: true
+
 jobs:
   build-rust:
     name: "Build ${{ inputs.architecture }}${{ inputs.features && format(' ({0})', inputs.features) || '' }}"
