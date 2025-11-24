@@ -169,7 +169,7 @@ jobs:
           fi
 
       - name: Checkout Source Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download specific Build Artifact to artifacts/
         if: ${{ inputs.artifact-name != '' && inputs.artifact-name != '*' }}
