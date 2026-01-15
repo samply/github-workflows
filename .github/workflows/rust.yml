@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Write deny.toml
       run: |
           if [[ -f "deny.toml" ]]; then
@@ -118,7 +118,7 @@ jobs:
         features: ${{ fromJSON(inputs.features) }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Download bins
         uses: actions/download-artifact@v5
         with:
@@ -146,7 +146,7 @@ jobs:
     if: ${{ inputs.cargo-fmt-check }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
