@@ -41,7 +41,7 @@ on:
       ghcr-retention-policy:
         description: "delete GHCR images older than ... (default: '6months'; state 'keep' to skip)"
         required: false
-        default: '6months'
+        default: "6months"
         type: string
       cargo-fmt-check:
         description: "Whether to check code style with cargo fmt"
@@ -63,9 +63,9 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v5
-    - name: Write deny.toml
-      run: |
+      - uses: actions/checkout@v5
+      - name: Write deny.toml
+        run: |
           if [[ -f "deny.toml" ]]; then
               echo "::warning title=cargo-deny::File deny.toml exists and will be ignored by CI! Consider removing it from your project!"
           fi
@@ -83,7 +83,9 @@ jobs:
               "Zlib",
               "OpenSSL",
               "MPL-2.0",
-              "CDLA-Permissive-2.0"
+              "CDLA-Permissive-2.0",
+              "Apache-2.0 WITH LLVM-exception",
+              "BSL-1.0"
           ]
           [sources.allow-org]
           github = ["samply"]
@@ -94,7 +96,7 @@ jobs:
             { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained but focus transitively depends on it" },
           ]
           EOF
-    - uses: EmbarkStudios/cargo-deny-action@v2
+      - uses: EmbarkStudios/cargo-deny-action@v2
 
   build:
     strategy:
@@ -110,7 +112,7 @@ jobs:
 
   test:
     name: Test
-    needs: [ build ]
+    needs: [build]
     runs-on: ubuntu-22.04
 
     strategy:
@@ -154,7 +156,7 @@ jobs:
 
   docker:
     name: Docker
-    needs: [ build, pre-check, test ]
+    needs: [build, pre-check, test]
     if: ${{ inputs.push-to }}
 
     strategy:
@@ -174,7 +176,7 @@ jobs:
       # Define the build context of your image, typically default '.' will be enough
       # build-context: '.'
       # Define the Dockerfile of your image, typically default './Dockerfile' will be enough
-      build-file: './Dockerfile'
+      build-file: "./Dockerfile"
       # NOTE: This doesn't work currently
       # A list of build arguments, passed to the docker build
       build-args: |
@@ -184,7 +186,7 @@ jobs:
       # build-platforms: ${{ env.build_platforms }}
       build-platforms-short: ${{ inputs.architectures }}
       # If your actions generate an artifact in a previous build step, you can tell this workflow to download it
-      artifact-name: '*'
+      artifact-name: "*"
       binary-name: ${{ matrix.components }}
       push-to: ${{ inputs.push-to }}
       ghcr-retention-policy: ${{ inputs.ghcr-retention-policy }}
