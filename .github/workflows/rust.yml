@@ -94,6 +94,7 @@ jobs:
             { id = "RUSTSEC-2023-0071", reason = "beam needs it to build" },
             { id = "RUSTSEC-2024-0384", reason = "transative dep of beam"},
             { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained but focus transitively depends on it" },
+            { id = "RUSTSEC-2026-0049", reason = "rustls-webpki 0.101.7 via aws-smithy-http-client legacy-rustls, unfixable until AWS SDK drops rustls 0.21" },
           ]
           EOF
       - uses: EmbarkStudios/cargo-deny-action@v2
