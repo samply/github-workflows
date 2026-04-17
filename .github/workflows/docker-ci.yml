@@ -264,7 +264,7 @@ jobs:
             # Branch pushes
             type=ref,event=branch
             # PRs
-            type=ref,event=pr
+            type=ref,event=pr,prefix=${{ inputs.image-tag-prefix }}pr-
             # Semver tags
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
