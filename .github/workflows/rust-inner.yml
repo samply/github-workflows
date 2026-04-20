@@ -64,7 +64,7 @@ jobs:
             echo EOF
           } >> "$GITHUB_ENV"
       - name: Upload (bins)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: binaries-${{ inputs.architecture }}-${{ inputs.features }}
           if-no-files-found: error
@@ -72,7 +72,7 @@ jobs:
             ${{ env.bins }}
       - name: Upload (test, native only)
         if: inputs.architecture == 'amd64'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: testbinaries-${{ inputs.architecture }}-${{ inputs.features }}
           if-no-files-found: error
