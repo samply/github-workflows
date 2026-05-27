@@ -39,9 +39,9 @@ on:
         type: string
         default: "auto"
       ghcr-retention-policy:
-        description: "delete GHCR images older than ... (default: '6months'; state 'keep' to skip)"
+        description: "delete GHCR images older than ... (default: '6 months'; state 'keep' to skip)"
         required: false
-        default: "6months"
+        default: "6 months"
         type: string
       cargo-fmt-check:
         description: "Whether to check code style with cargo fmt"

@@ -67,10 +67,10 @@ on:
         required: false
         type: string
         default: 'auto'
-      # delete GHCR images older than ... (default: "6months"; state "keep" to skip)
+      # delete GHCR images older than ... (default: "6 months"; state "keep" to skip)
       ghcr-retention-policy:
         required: false
-        default: 6months
+        default: '6 months'
         type: string
     secrets:
       DOCKERHUB_USERNAME:
@@ -83,19 +83,21 @@ jobs:
     name: Tidy GHCR images (${{ inputs.image-name }})
     runs-on: ubuntu-latest
     if: ${{ inputs.ghcr-retention-policy != 'keep' }}
+    permissions:
+      packages: write
 
     steps:
-      - name: Compute image name
+      - name: Compute package name
         run: |
           IMGNAME="${{ inputs.image-name }}"
-          echo "imgnameshort=${IMGNAME/samply\//}" >> $GITHUB_ENV
+          echo "pkgname=${IMGNAME/samply\//}" >> $GITHUB_ENV
 
       - name: Delete old images
-        uses: snok/container-retention-policy@v3.0.0
+        uses: dataaxiom/ghcr-cleanup-action@v1
         with:
-          image-names: ${{ env.imgnameshort }}
-          cut-off: ${{ inputs.ghcr-retention-policy }}
-          account: samply
+          packages: ${{ env.pkgname }}
+          delete-untagged: true
+          older-than: ${{ inputs.ghcr-retention-policy }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
   build:
