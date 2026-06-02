@@ -278,7 +278,7 @@ jobs:
 
       - name: "Docker: Login to ${{ env.registry }}"
         if: env.registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.registry }}
           username: ${{ env.registry == 'ghcr.io' && github.actor         || secrets.DOCKERHUB_USERNAME }}
