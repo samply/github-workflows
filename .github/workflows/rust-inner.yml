@@ -16,6 +16,11 @@ on:
         required: false
         type: string
         default: "v0"
+      runs-on:
+        description: 'JSON runner label(s); empty keeps the arch-based GitHub-hosted default.'
+        required: false
+        type: string
+        default: ''
 
 env:
   CARGO_TERM_COLOR: always
@@ -24,7 +29,7 @@ env:
 jobs:
   build-rust:
     name: "Build ${{ inputs.architecture }}${{ inputs.features && format(' ({0})', inputs.features) || '' }}"
-    runs-on: ${{ inputs.architecture == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
+    runs-on: ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on) || github.event.repository.private && fromJSON('["self-hosted","linux","x64"]') || (inputs.architecture == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04') }}
     steps:
       - uses: actions/checkout@v6
       - name: Set profile ${{ inputs.profile }}

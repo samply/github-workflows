@@ -72,6 +72,11 @@ on:
         required: false
         default: '6 months'
         type: string
+      runs-on:
+        description: 'JSON runner label(s) for the docker jobs; empty uses ubuntu-latest.'
+        required: false
+        type: string
+        default: ''
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -81,7 +86,7 @@ on:
 jobs:
   tidy-ghcr:
     name: Tidy GHCR images (${{ inputs.image-name }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on) || github.event.repository.private && fromJSON('["self-hosted","linux","x64"]') || 'ubuntu-latest' }}
     if: ${{ inputs.ghcr-retention-policy != 'keep' }}
     permissions:
       packages: write
@@ -102,7 +107,7 @@ jobs:
 
   build:
     name: Dockerize${{ inputs.binary-name && format(' ({0})', inputs.binary-name) }}${{ inputs.image-tag-suffix && format(' ({0})', inputs.image-tag-suffix) }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on) || github.event.repository.private && fromJSON('["self-hosted","linux","x64"]') || 'ubuntu-latest' }}
 
     steps:
       - name: Read vars

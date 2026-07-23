@@ -48,6 +48,11 @@ on:
         required: false
         type: boolean
         default: false
+      runs-on:
+        description: 'JSON runner label(s) overriding the runner for all jobs. Empty auto-selects: private repos run on ["self-hosted","linux","x64"], public repos on the GitHub-hosted defaults. Set explicitly to force a runner on every trigger (e.g. a private repo whose scheduled runs must stay self-hosted).'
+        required: false
+        type: string
+        default: ''
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -60,7 +65,7 @@ env:
 jobs:
   pre-check:
     name: Security, License Check
-    runs-on: ubuntu-22.04
+    runs-on: ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on) || github.event.repository.private && fromJSON('["self-hosted","linux","x64"]') || 'ubuntu-22.04' }}
 
     steps:
       - uses: actions/checkout@v6
@@ -109,11 +114,12 @@ jobs:
       architecture: ${{ matrix.arch }}
       features: ${{ matrix.features }}
       profile: ${{ inputs.profile }}
+      runs-on: ${{ inputs.runs-on }}
 
   test:
     name: Test
     needs: [build]
-    runs-on: ubuntu-22.04
+    runs-on: ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on) || github.event.repository.private && fromJSON('["self-hosted","linux","x64"]') || 'ubuntu-22.04' }}
 
     strategy:
       matrix:
@@ -146,7 +152,7 @@ jobs:
   cargo-fmt-check:
     name: Cargo fmt check
     if: ${{ inputs.cargo-fmt-check }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on != '' && fromJSON(inputs.runs-on) || github.event.repository.private && fromJSON('["self-hosted","linux","x64"]') || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -190,6 +196,7 @@ jobs:
       binary-name: ${{ matrix.components }}
       push-to: ${{ inputs.push-to }}
       ghcr-retention-policy: ${{ inputs.ghcr-retention-policy }}
+      runs-on: ${{ inputs.runs-on }}
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
