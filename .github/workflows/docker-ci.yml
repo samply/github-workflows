@@ -261,7 +261,7 @@ jobs:
       - name: "Docker: Generate Image Tags"
         id: docker-meta
         if: env.registry
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: |
             "${{ env.registry }}/${{ inputs.image-name }}"
