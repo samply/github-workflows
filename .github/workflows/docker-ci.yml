@@ -72,6 +72,11 @@ on:
         required: false
         default: '6 months'
         type: string
+      # Set to false to build without the BuildKit layer cache (type=gha), e.g. when the runner's connection to the GitHub Actions cache is slower than rebuilding.
+      layer-cache:
+        required: false
+        type: boolean
+        default: true
       runs-on:
         description: 'JSON runner label(s) for the docker jobs; empty uses ubuntu-latest.'
         required: false
@@ -161,8 +166,22 @@ jobs:
               exit 1
           esac
 
-          echo "Resulting build_platforms is \"$RESULT\""
+          ## QEMU is only needed to build for platforms other than the runner's own
+          case "$RUNNER_ARCH" in
+            X64) NATIVE="linux/amd64" ;;
+            ARM64) NATIVE="linux/arm64" ;;
+            *) NATIVE="" ;;
+          esac
+          NEEDS_QEMU=false
+          for PLATFORM in ${RESULT//,/ }; do
+            if [ "${PLATFORM%/v8}" != "$NATIVE" ]; then
+              NEEDS_QEMU=true
+            fi
+          done
+
+          echo "Resulting build_platforms is \"$RESULT\" (needs QEMU: $NEEDS_QEMU)"
           echo "build_platforms=$RESULT" >> $GITHUB_ENV
+          echo "needs_qemu=$NEEDS_QEMU" >> $GITHUB_ENV
           echo "registry=$PUSH_TO" >> $GITHUB_ENV
 
       - name: Analyze repository
@@ -202,6 +221,7 @@ jobs:
           sed -i "s,/usr/local/bin/samply,/usr/local/bin/${BINARY_NAME},g" ${BUILD_FILE}
 
       - name: Set up QEMU
+        if: ${{ env.needs_qemu == 'true' }}
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ env.build_platforms }}
@@ -237,8 +257,8 @@ jobs:
           load: true
           tags: ${{ inputs.image-name }}
           pull: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: ${{ inputs.layer-cache && 'type=gha' || '' }}
+          cache-to: ${{ inputs.layer-cache && 'type=gha,mode=max' || '' }}
 
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
@@ -301,5 +321,5 @@ jobs:
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
           pull: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: ${{ inputs.layer-cache && 'type=gha' || '' }}
+          cache-to: ${{ inputs.layer-cache && 'type=gha,mode=max' || '' }}
