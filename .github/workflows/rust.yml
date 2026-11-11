@@ -102,6 +102,8 @@ jobs:
           ]
           EOF
       - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          rust-version: stable
 
   build:
     strategy:
