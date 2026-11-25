@@ -99,6 +99,7 @@ jobs:
           ignore = [
             { id = "RUSTSEC-2023-0071", reason = "no upstream fix for the rsa Marvin attack; beam needs rsa to build" },
             { id = "RUSTSEC-2024-0436", reason = "paste is unmaintained but focus transitively depends on it" },
+            { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained but there is no drop-in replacement for our dependents yet" },
           ]
           EOF
       - uses: EmbarkStudios/cargo-deny-action@v2
